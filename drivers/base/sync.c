@@ -461,14 +461,14 @@ out:
 
 int sync_fence_wait(struct sync_fence *fence, long timeout)
 {
-	int err = 0;
+	int err;
 
-	if (timeout > 0) {
+	if (timeout) {
 		timeout = msecs_to_jiffies(timeout);
 		err = wait_event_interruptible_timeout(fence->wq,
 						       fence->status != 0,
 						       timeout);
-	} else if (timeout < 0) {
+	} else {
 		err = wait_event_interruptible(fence->wq, fence->status != 0);
 	}
 
@@ -531,13 +531,8 @@ static long sync_fence_ioctl_merge(struct sync_fence *fence, unsigned long arg)
 	struct sync_fence *fence2, *fence3;
 	struct sync_merge_data data;
 
-	if (fd < 0)
-		return fd;
-
-	if (copy_from_user(&data, (void __user *)arg, sizeof(data))) {
-		err = -EFAULT;
-		goto err_put_fd;
-	}
+	if (copy_from_user(&data, (void __user *)arg, sizeof(data)))
+		return -EFAULT;
 
 	fence2 = sync_fence_fdget(data.fd2);
 	if (fence2 == NULL) {
